@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<title>问题详情</title>
+
+<link rel="stylesheet" href="../statics/css/layui.css">
+</head>
+<body>
+
+<script type="text/html" id="toolbarDemo">
+  <div class="layui-btn-container">
+    <button class="layui-btn layui-btn-sm" lay-event="getCheckLength">获取选中数目</button>
+    <button class="layui-btn layui-btn-sm" lay-event="isAll">验证是否全选</button>
+    <button class="layui-btn layui-btn-sm" lay-event="reload">刷新</button>
+  </div>
+</script>
+    <fieldset class="layui-elem-field layui-field-title">
+      <legend id='answer'></legend>
+    </fieldset>
+        <blockquote class="layui-elem-quote news_search">
+		<div class="layui-row">
+			<form class="layui-form layui-col-md12 x-so" id="complain_search">
+				作者:
+				<div class="layui-input-inline">
+					<input type="text" name="author" id="author"
+						placeholder="请输入作者" autocomplete="off" class="layui-input">
+				</div>
+                关键词:
+				<div class="layui-input-inline">
+					<input type="text" name="keywords" id="keywords"
+						placeholder="请输入关键词" autocomplete="off" class="layui-input">
+				</div>
+				<button id="search" class="layui-btn" lay-submit
+					lay-filter="Answer_Search">
+					<i class="layui-icon">&#xe615;</i>
+				</button>
+				<button id="reset" class="layui-btn" lay-submit
+					lay-filter="Answer_Reset">
+					<i class="layui-icon">&#xe669;</i>
+				</button>
+			</form>
+		</div>
+          <table id="test" lay-filter="test"></table>
+	</blockquote>
+
+
+<script type="text/html" id="barDemo">
+  <a class="layui-btn layui-btn-xs" lay-event="view">查看回答</a>
+  <a class="layui-btn  layui-btn-normal layui-btn-xs" lay-event="comments" id_active="">查看评论</a>
+</script>
+<script src="../statics/layui.js" charset="utf-8"></script>
+<script type="text/html" id="author_link">
+  <a href="related_question.html?{{d.author}}" class="layui-table-link">{{d.author}}</a>
+</script>
+
+<script>
+    var  $ = layui.$;
+    var perimeters= window.location.search;
+    answer =decodeURI(perimeters.substr(1).split('&')[0])
+    question_id =decodeURI(perimeters.substr(1).split('&')[1])
+    total_answer = decodeURI(perimeters.substr(1).split('&')[2])
+    document.getElementById("answer").innerHTML=answer;
+    var answer_id,comment_count,table_data;//全局变量
+layui.use(['table','layer','form','laypage','rate'], function(){
+  var table = layui.table,
+     layer = layui.layer,
+      rate  =layui.rate,
+      form = layui.form,
+      $ = layui.$;
+
+  //渲染
+  table.render({
+    elem: '#test'
+    ,height: 450
+      ,id:"AnswerReload"
+    //,width: 600
+    ,title: '知乎回答情况表'
+    ,where: {
+          question_id: question_id,
+          total_answer: total_answer,
+      }
+      ,method: 'post'
+    ,contentType: "application/json;charset=utf-8"
+    ,url: 'http://192.168.1.2:8000/answer_post/'//数据接口
+    ,loading:true
+    //,size: 'lg'
+    //,page: true//开启分页
+    //,autoSort: false
+    //,totalRow: true
+    ,limit: 30
+    ,toolbar: '#toolbarDemo'
+    ,defaultToolbar: ['filter', 'exports', 'print']
+    ,jump: function(obj){
+      console.log(obj)
+    }
+    ,cols: [[
+      {type: 'checkbox', fixed: 'left',width:50}
+      ,{field:'id', title:'回答ID',align:'center', width:85, fixed: 'left', unresize: true,id:'answer_id'}
+      ,{field:'author', title:'作者',align:'center', width:100,templet:'#author_link'}
+      ,{field:'created_time', title:'创建时间', align:'center',width:110, sort: true,}
+       ,{field:"relation",title:"相关度",align: 'center',width:110,sort:true,id:'rate',
+          templet: function (d) {
+              return '<div id="star'+d.id+'" style="font-size: 13px;"></div>'
+          }}
+      ,{field:"keywords",title:"关键词",align:'center',width:160,overflow:'visible',textOverflow:'inherit'}
+      ,{field:"voted_count",title:"点赞数",align:'center',width:97,sort:true}
+      ,{field:'thanks_count', title:'感谢数',align:'center', hide: 0, width:97,sort:true,}
+      ,{field:"comment_count",title:"评论数",align:'center',width:97,sort:true}
+      ,{fixed: 'right', title:'操作', align:'center',toolbar: '#barDemo'}
+    ]]
+    ,done:function(res){
+            var data = res.data;//返回的json中data数据
+           table_data = data;
+            for (var item in data) {
+                //司机星级
+                rate.render({
+                    elem: '#star'+data[item].id+''       //绑定元素
+                    , length: 5            //星星个数
+                    , value: data[item].relation        //初始化值
+                    , theme: '#009688'     //颜色
+                    , half: true           //支持半颗星
+                    , text: false           //显示文本，默认显示 '3.5星'
+                    , readonly: true      //只读
+                });
+
+            };
+      }
+  });
+  //工具栏事件
+  table.on('toolbar(test)', function(obj){
+    var checkStatus = table.checkStatus(obj.config.id);
+    switch(obj.event){
+      case 'getCheckData':
+        var data = checkStatus.data;
+        layer.alert(JSON.stringify(data));
+      break;
+      case 'getCheckLength':
+        var data = checkStatus.data;
+        layer.msg('选中了：'+ data.length + ' 个');
+      break;
+      case 'isAll':
+        layer.msg(checkStatus.isAll ? '全选': '未全选')
+      break;
+      case 'LAYTABLE_TIPS':
+        layer.alert('Table for layui-v'+ layui.v);
+      break;
+      case 'reload':
+        table.reload('test', {
+          page: {curr: 5}
+          //,height: 300
+          //,url: 'x'
+        }, 'data');
+      break;
+    };
+  });
+
+  //监听表格复选框选择
+  table.on('checkbox(test)', function(obj){
+    console.log(obj)
+  });
+
+  //监听行工具事件
+  table.on('tool(test)', function(obj){
+    var data = obj.data;
+    console.log(obj.data)
+    if(obj.event === 'comments'){
+       //设置第二个<a>标签中的id值为data.id
+       //$("a:eq(1)").attr("id",data.id)
+        answer_id = data.id;
+        comment_count = data.comment_count;
+        //ajax向后台传参
+       layer.open({
+          type: 2,
+           title:'评论详情',
+          area:['400px','500px'],
+          content: 'comments_show.html',
+           async:false,
+           loading:true,
+           closeBtn: 1,
+       }
+       );
+    } else if(obj.event === 'view'){
+      layer.open({
+        formType: 2
+          ,title: '回答详情'
+          , area: ['400px', '450px']
+        ,content: data.content
+      }, function(value, index){
+        layer.close(index);
+      });
+    }
+  });
+
+  //监听排序
+  table.on('sort(test)', function(obj){
+           console.log(obj.field)
+          console.log(table_data)
+    table.reload('test',{//test为table的id
+      initSort: obj
+      ,page: {curr: 1} //重新从第一页开始
+      ,where: { //重新请求服务端
+        key: obj.field //排序字段
+        ,order: obj.type //排序方式
+      }
+    });
+      for (var item in table_data) {
+          //星级
+                 rate.render({
+              elem: '#star'+table_data[item].id+''       //绑定元素
+              , length: 5            //星星个数
+              , value: table_data[item].relation        //初始化值
+              , theme: '#009688'     //颜色
+              , half: true           //支持半颗星
+              , text: false           //显示文本，默认显示 '3.5星'
+              , readonly: true      //只读
+                });
+            };
+  });
+
+  //监听查询
+  form.render();
+  form.on('submit(Answer_Search)', function(data) {
+	var formData = data.field;
+	console.log(formData);
+	var keywords = formData.keywords,
+		author = formData.author,
+        search_data = [] ;//用来记录每一次的查询结果
+
+       //判断keywords和author是否为空
+        if(keywords == ''){
+            if(author == ''){
+               //提示窗口
+                layer.msg('请输入查询条件哦',function (index) {
+                    layer.close(index);
+                    search_data = table_data;
+                    console.log(search_data);
+                     table.render({
+        elem: '#test'
+        ,height: 450
+          ,id:"AnswerReload"
+        //,width: 600
+        ,title: '知乎回答情况表'
+       ,data:search_data
+        ,loading:true
+        //,size: 'lg'
+        //,page: true//开启分页
+        //,autoSort: false
+        //,totalRow: true
+        ,limit: 30
+        ,toolbar: '#toolbarDemo'
+        ,defaultToolbar: ['filter', 'exports', 'print']
+        ,jump: function(obj){
+          console.log(obj)
+        }
+        ,cols: [[
+          {type: 'checkbox', fixed: 'left',width:50}
+          ,{field:'id', title:'回答ID',align:'center', width:75, fixed: 'left', unresize: true,id:'answer_id'}
+          ,{field:'author', title:'作者',align:'center', width:100,templet:'#author_link'}
+          ,{field:'created_time', title:'创建时间', align:'center',width:110, sort: true,}
+           ,{field:"relation",title:"相关度",align: 'center',width:110,sort:true,id:'rate',
+              templet: function (d) {
+                  return '<div id="star'+d.id+'" style="font-size: 13px;"></div>'
+              }}
+          ,{field:"keywords",title:"关键词",align:'center',width:160,overflow:'visible',textOverflow:'inherit'}
+          ,{field:"voted_count",title:"点赞数",align:'center',width:97,sort:true}
+          ,{field:'thanks_count', title:'感谢数',align:'center', hide: 0, width:97,sort:true,}
+          ,{field:"comment_count",title:"评论数",align:'center',width:97,sort:true}
+          ,{fixed: 'right', title:'操作', align:'center',toolbar: '#barDemo'}
+        ]]
+      });
+                      //加载星级评分
+                     for (var item in search_data) {
+          //星级
+                 rate.render({
+              elem: '#star'+search_data[item].id+''       //绑定元素
+              , length: 5            //星星个数
+              , value: search_data[item].relation        //初始化值
+              , theme: '#009688'     //颜色
+              , half: true           //支持半颗星
+              , text: false           //显示文本，默认显示 '3.5星'
+              , readonly: true      //只读
+                });
+            };
+                })
+            } else {
+             for(var item in table_data){//for循环遍历table_data
+                    if(table_data[item].author.search(author) != -1) {
+                        console.log(table_data[item].author.search(author))
+                        console.log(table_data[item].author);
+                        search_data.push(table_data[item]);
+                    }}
+              table.render({
+        elem: '#test'
+        ,height: 450
+          ,id:"AnswerReload"
+        //,width: 600
+        ,title: '知乎回答情况表'
+       ,data:search_data
+        ,loading:true
+        //,size: 'lg'
+        ,page: true//开启分页
+        //,autoSort: false
+        //,totalRow: true
+        ,limit: 30
+        ,toolbar: '#toolbarDemo'
+        ,defaultToolbar: ['filter', 'exports', 'print']
+        ,jump: function(obj){
+          console.log(obj)
+        }
+        ,cols: [[
+          {type: 'checkbox', fixed: 'left',width:50}
+          ,{field:'id', title:'回答ID',align:'center', width:75, fixed: 'left', unresize: true,id:'answer_id'}
+          ,{field:'author', title:'作者',align:'center', width:100,templet:'#author_link'}
+          ,{field:'created_time', title:'创建时间', align:'center',width:110, sort: true,}
+           ,{field:"relation",title:"相关度",align: 'center',width:110,sort:true,id:'rate',
+              templet: function (d) {
+                  return '<div id="star'+d.id+'" style="font-size: 13px;"></div>'
+              }}
+          ,{field:"keywords",title:"关键词",align:'center',width:160,overflow:'visible',textOverflow:'inherit'}
+          ,{field:"voted_count",title:"点赞数",align:'center',width:97,sort:true}
+          ,{field:'thanks_count', title:'感谢数',align:'center', hide: 0, width:97,sort:true,}
+          ,{field:"comment_count",title:"评论数",align:'center',width:97,sort:true}
+          ,{fixed: 'right', title:'操作', align:'center',toolbar: '#barDemo'}
+        ]]
+      });
+             //加载星级评分
+             for (var item in search_data) {
+          //星级
+                 rate.render({
+              elem: '#star'+search_data[item].id+''       //绑定元素
+              , length: 5            //星星个数
+              , value: search_data[item].relation        //初始化值
+              , theme: '#009688'     //颜色
+              , half: true           //支持半颗星
+              , text: false           //显示文本，默认显示 '3.5星'
+              , readonly: true      //只读
+                });
+            };
+            }//author非空
+        }
+        else{
+            var row_keyword = [];
+            if(author == ''){
+                for(var item in table_data){
+                    if(table_data[item].keywords.search(keywords)!=-1){
+                        search_data.push(table_data[item]);
+                    }
+                }
+                 table.render({
+        elem: '#test'
+        ,height: 450
+          ,id:"AnswerReload"
+        //,width: 600
+        ,title: '知乎回答情况表'
+       ,data:search_data
+        ,loading:true
+        //,size: 'lg'
+        ,page: true//开启分页
+        //,autoSort: false
+        //,totalRow: true
+        ,limit: 30
+        ,toolbar: '#toolbarDemo'
+        ,defaultToolbar: ['filter', 'exports', 'print']
+        ,jump: function(obj){
+          console.log(obj)
+        }
+        ,cols: [[
+          {type: 'checkbox', fixed: 'left',width:50}
+          ,{field:'id', title:'回答ID',align:'center', width:75, fixed: 'left', unresize: true,id:'answer_id'}
+          ,{field:'author', title:'作者',align:'center', width:100,templet:'#author_link'}
+          ,{field:'created_time', title:'创建时间', align:'center',width:110, sort: true,}
+           ,{field:"relation",title:"相关度",align: 'center',width:110,sort:true,id:'rate',
+              templet: function (d) {
+                  return '<div id="star'+d.id+'" style="font-size: 13px;"></div>'
+              }}
+          ,{field:"keywords",title:"关键词",align:'center',width:160,overflow:'visible',textOverflow:'inherit'}
+          ,{field:"voted_count",title:"点赞数",align:'center',width:97,sort:true}
+          ,{field:'thanks_count', title:'感谢数',align:'center', hide: 0, width:97,sort:true,}
+          ,{field:"comment_count",title:"评论数",align:'center',width:97,sort:true}
+          ,{fixed: 'right', title:'操作', align:'center',toolbar: '#barDemo'}
+        ]]
+      });
+                 //加载星级评分
+                  for (var item in search_data) {
+          //星级
+                 rate.render({
+              elem: '#star'+search_data[item].id+''       //绑定元素
+              , length: 5            //星星个数
+              , value: search_data[item].relation        //初始化值
+              , theme: '#009688'     //颜色
+              , half: true           //支持半颗星
+              , text: false           //显示文本，默认显示 '3.5星'
+              , readonly: true      //只读
+                });
+            };
+            }else{
+                for(var item in table_data){
+                     if(table_data[item].author.search(author) != -1){
+                         console.log('测试')
+                         if(table_data[item].keywords.search(keywords)!=-1){
+                               search_data.push(table_data[item]);
+                             console.log(search_data);
+                         }
+                     }
+                }
+                   table.render({
+        elem: '#test'
+        ,height: 450
+          ,id:"AnswerReload"
+        //,width: 600
+        ,title: '知乎回答情况表'
+       ,data:search_data
+        ,loading:true
+        //,size: 'lg'
+        ,page: true//开启分页
+        //,autoSort: false
+        //,totalRow: true
+        ,limit: 30
+        ,toolbar: '#toolbarDemo'
+        ,defaultToolbar: ['filter', 'exports', 'print']
+        ,jump: function(obj){
+          console.log(obj)
+        }
+        ,cols: [[
+          {type: 'checkbox', fixed: 'left',width:50}
+          ,{field:'id', title:'回答ID',align:'center', width:75, fixed: 'left', unresize: true,id:'answer_id'}
+          ,{field:'author', title:'作者',align:'center', width:100,templet:'#author_link'}
+          ,{field:'created_time', title:'创建时间', align:'center',width:110, sort: true,}
+           ,{field:"relation",title:"相关度",align: 'center',width:110,sort:true,id:'rate',
+              templet: function (d) {
+                  return '<div id="star'+d.id+'" style="font-size: 13px;"></div>'
+              }}
+          ,{field:"keywords",title:"关键词",align:'center',width:160,overflow:'visible',textOverflow:'inherit'}
+          ,{field:"voted_count",title:"点赞数",align:'center',width:97,sort:true}
+          ,{field:'thanks_count', title:'感谢数',align:'center', hide: 0, width:97,sort:true,}
+          ,{field:"comment_count",title:"评论数",align:'center',width:97,sort:true}
+          ,{fixed: 'right', title:'操作', align:'center',toolbar: '#barDemo'}
+        ]]
+      });
+                 //加载星级评分
+                  for (var item in search_data) {
+          //星级
+                 rate.render({
+              elem: '#star'+search_data[item].id+''       //绑定元素
+              , length: 5            //星星个数
+              , value: search_data[item].relation        //初始化值
+              , theme: '#009688'     //颜色
+              , half: true           //支持半颗星
+              , text: false           //显示文本，默认显示 '3.5星'
+              , readonly: true      //只读
+                });
+            };
+            }
+        }
+
+    return false;
+});
+    form.on('submit(Answer_Reset)', function(data) {
+	var formData = data.field;
+	console.debug(formData);
+	var question_id = formData.question_id
+	 //渲染
+     table.render({
+    elem: '#test'
+    ,height: 450
+      ,id:"AnswerReload"
+    //,width: 600
+    ,title: '知乎回答情况表'
+   ,data:table_data
+    ,loading:true
+    //,size: 'lg'
+    //,page: true//开启分页
+    //,autoSort: false
+    //,totalRow: true
+    ,limit: 30
+    ,toolbar: '#toolbarDemo'
+    ,defaultToolbar: ['filter', 'exports', 'print']
+    ,jump: function(obj){
+      console.log(obj)
+    }
+    ,cols: [[
+      {type: 'checkbox', fixed: 'left',width:50}
+      ,{field:'id', title:'回答ID',align:'center', width:75, fixed: 'left', unresize: true,id:'answer_id'}
+      ,{field:'author', title:'作者',align:'center', width:100,templet:'#author_link'}
+      ,{field:'created_time', title:'创建时间', align:'center',width:110, sort: true,}
+       ,{field:"relation",title:"相关度",align: 'center',width:110,sort:true,id:'rate',
+          templet: function (d) {
+              return '<div id="star'+d.id+'" style="font-size: 13px;"></div>'
+          }}
+      ,{field:"keywords",title:"关键词",align:'center',width:160,overflow:'visible',textOverflow:'inherit'}
+      ,{field:"voted_count",title:"点赞数",align:'center',width:97,sort:true}
+      ,{field:'thanks_count', title:'感谢数',align:'center', hide: 0, width:97,sort:true,}
+      ,{field:"comment_count",title:"评论数",align:'center',width:97,sort:true}
+      ,{fixed: 'right', title:'操作', align:'center',toolbar: '#barDemo'}
+    ]]
+  });
+	 for (var item in table_data) {
+          //星级
+                 rate.render({
+              elem: '#star'+table_data[item].id+''       //绑定元素
+              , length: 5            //星星个数
+              , value: table_data[item].relation        //初始化值
+              , theme: '#009688'     //颜色
+              , half: true           //支持半颗星
+              , text: false           //显示文本，默认显示 '3.5星'
+              , readonly: true      //只读
+                });
+            };
+    return false;
+});
+  var $ = layui.jquery, active = {
+    parseTable: function(){
+      table.init('parse-table-demo', {
+        limit: 3
+      });
+    }
+    ,add: function(){
+      table.addRow('tests')
+    }
+  };
+  $('i').on('click', function(){
+    var type = $(this).data('type');
+    active[type] ? active[type].call(this) : '';
+  });
+  $('.layui-btn').on('click', function(){
+    var type = $(this).data('type');
+    active[type] ? active[type].call(this) : '';
+  });
+});
+</script>
+</body>
+</html>

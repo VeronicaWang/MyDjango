@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<title>疫情问答检索系统</title>
+<link rel="stylesheet" href="../statics/css/layui.css">
+
+<style>
+body{margin-top: 15px;margin-left: 50px;margin-right: 50px /*overflow-y: scroll;*/}
+    .layui-tab-item,.layui-tab-content{
+        height: 100%;
+    }
+</style>
+</head>
+<body>
+
+    <fieldset class="layui-elem-field layui-field-title">
+      <legend>新冠疫情检索系统</legend>
+    </fieldset>
+
+    <div class="layui-tab layui-tab-card" style="height: 600px" >
+          <ul class="layui-tab-title">
+            <li class="layui-this">一月份</li>
+            <li>二月份</li>
+            <li>三月份</li>
+            <li>四月份</li>
+            <li>五月份</li>
+            <li>六月份</li>
+          </ul>
+          <div class="layui-tab-content" style="height: 100%">
+              <div class="layui-tab-item layui-show"><iframe src="question_1.html" class="myiframe"  data-frameid="'+id+'" scrolling="no" frameborder="0" src="'+url+'" height="100%" style="width:100%;"></iframe></div>
+              <div class="layui-tab-item "><iframe src="question_2.html"class="myiframe"  data-frameid="'+id+'" scrolling="no" frameborder="0" src="'+url+'" height="100%" style="width:100%;"></iframe></div>
+               <div class="layui-tab-item "><iframe src="question_3.html"class="myiframe"  data-frameid="'+id+'" scrolling="no" frameborder="0" src="'+url+'" height="100%" style="width:100%;"></iframe></div>
+               <div class="layui-tab-item "><iframe src="question_4.html"class="myiframe"  data-frameid="'+id+'" scrolling="no" frameborder="0" src="'+url+'" height="100%" style="width:100%;"></iframe></div>
+               <div class="layui-tab-item "><iframe src="question_5.html"class="myiframe"  data-frameid="'+id+'" scrolling="no" frameborder="0" src="'+url+'" height="100%" style="width:100%;"></iframe></div>
+               <div class="layui-tab-item "><iframe src="question_6.html"class="myiframe"  data-frameid="'+id+'" scrolling="no" frameborder="0" src="'+url+'" height="100%" style="width:100%;"></iframe></div>
+          </div>
+        </div>
+
+<script src="../statics/layui.js" src="//layui.hcwl520.com.cn/layui-v2.4.5/layui.js" charset="utf-8"></script>
+<script>
+
+layui.use('element', function(){
+  var element = layui.element;
+  function FrameWH() {
+       //获取body高度
+       var h = $('.layui-body').height()-64;
+       //设置tab的高度，
+       $(".layui-tab").css("height",h+"px");
+  }
+  //页面发生变化改变
+   $(window).resize(function () {
+       FrameWH();
+   });
+});
+</script>
+</body>
+</html>

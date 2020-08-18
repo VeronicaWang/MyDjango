@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Layui</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="../statics/css/layui.css">
+  <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+    <style>
+    body{margin-right: 20px;margin-left: 20px;margin-top: 5px /*overflow-y: scroll;*/}
+    </style>
+</head>
+<body>
+
+<fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+  <legend id="legend"></legend>
+</fieldset>
+<ul class="layui-timeline" id="test"></ul>
+<script src="../statics/layui.js" charset="utf-8"></script>
+<script>
+var data;
+layui.use(['table','layer','form','laypage'], function(){
+     var str;
+     $ = layui.$;
+     var answer_id = parent.answer_id
+     var comment_count = parent.comment_count
+        console.log(answer_id)
+    $.ajax({
+            url:'http://192.168.1.2:8000/get_comments/',
+            type:'post',
+            data:JSON.stringify({answer_id:answer_id,comment_count:comment_count}),
+            //dataType:'application/json;charset=utf-8',
+            async:true,
+            success:function (response) {//result为返回结果
+                data = response.data;
+                 for(var i=0;i<response.length;i++){
+                        str +='<li class="layui-timeline-item">' +
+                            '<i class="layui-icon layui-timeline-axis">&#xe66f;</i>' +
+                            '<div class="layui-timeline-content layui-text">';
+                        str += '<h3 class="layui-timeline-title">'+response.data[i].author+':'+'</h3>';
+                        str += '<p>'+response.data[i].content+'</p>';
+                        str += '<ul><li><i class="layui-icon" style="font-size: 20px; color: #009688;">&#xe637;</i>'
+                            +response.data[i].created_time+'  '+'<i class="layui-icon" style="font-size: 20px; color: #1E9FFF;">&#xe6c6;</i>'
+                            +response.data[i].voted_count+'</li></ul></div></li>';
+
+                    }
+                 document.getElementById('test').innerHTML=str;
+                 document.getElementById('legend').innerHTML='共'+response.length+'条评论';
+            },
+            error:function (error) {
+                console.log(error)
+            }
+        });
+})
+
+
+</script>
+<!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+<script>
+</script>
+
+</body>
+</html>

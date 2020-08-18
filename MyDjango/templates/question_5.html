@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<title>疫情检索系统</title>
+<link rel="stylesheet" href="../statics/css/layui.css">
+</head>
+<body>
+
+<script type="text/html" id="toolbarDemo">
+  <div class="layui-btn-container">
+    <button class="layui-btn layui-btn-sm" lay-event="getCheckLength">获取选中数目</button>
+    <button class="layui-btn layui-btn-sm" lay-event="isAll">验证是否全选</button>
+    <button class="layui-btn layui-btn-sm" lay-event="reload">刷新</button>
+  </div>
+</script>
+
+    <blockquote class="layui-elem-quote news_search">
+		<div class="layui-row">
+			<form class="layui-form layui-col-md12 x-so" id="complain_search">
+                    请输入关键词:
+				<div class="layui-input-inline">
+					<input type="text" name="keywords" id="question"
+						placeholder="请输入关键词" autocomplete="off" class="layui-input">
+				</div>
+
+				<button id="search" class="layui-btn" lay-submit
+					lay-filter="Question_Search">
+					<i class="layui-icon">&#xe615;</i>
+				</button>
+                <button id="reset" class="layui-btn" lay-submit lay-filter="Question_Reset">
+					<i class="layui-icon">&#xe669;</i>
+				</button>
+			</form>
+		</div>
+         <table id="test" lay-filter="test"></table>
+	</blockquote>
+
+
+
+<script type="text/html" id="barDemo">
+  <a class="layui-btn layui-btn-xs" lay-event="detail">查看详情</a>
+</script>
+
+<script type="text/html" id="questionlink">
+  <a href="answer.html?{{d.question}}&{{d.id}}&{{d.total_answer}}" class="layui-table-link">{{d.question}}</a>
+</script>
+
+
+<script src="../statics/layui.js" src="//layui.hcwl520.com.cn/layui-v2.4.5/layui.js" charset="utf-8"></script>
+<script>
+var table_data;
+var month = '0';
+
+layui.use(['table','layer','form','laypage'], function(){
+  var table = layui.table,
+      layer = layui.layer,
+      form = layui.form,
+      $ = layui.$;
+  table.render({
+    elem: '#test'
+    ,id:"QuestionReload"
+    ,smartReloadModel:true
+    ,height: 450
+    //,width: 600
+    ,title: '知乎回答情况表'
+    ,method:'post'
+    ,url: 'http://192.168.1.2:8000/question_search_5/'//数据接口
+    ,contentType: "application/json;charset=utf-8"
+    ,where:{month: "5"}
+   // ,page: true//开启分页
+    //,autoSort: false
+    ,loading: true
+    //,method: 'post'
+    //,totalRow: true
+    ,limit: 30
+    ,toolbar: '#toolbarDemo'
+    ,defaultToolbar: ['filter', 'exports', 'print']
+    ,jump: function(obj){
+      console.log(obj)
+    }
+    ,cols: [[
+      {type: 'checkbox', fixed: 'left',width:50}
+      ,{field:'id', title:'问题ID',align: 'center',width:100, fixed: 'left', unresize: true, sort: true,}
+      ,{field:'question', title:'问题',width:450,templet:'#questionlink'}
+      ,{field:'follower_count', title:'粉丝数',align: 'center',width:115,sort:true,}
+      ,{field:'total_answer',title:'回答数',align: 'center',width:115,sort:true}
+      ,{field:'date', title:'时间',align: 'center', width:120, sort: true}
+      ,{fixed: 'right', title:'操作',align: 'center', toolbar: '#barDemo'}
+    ]]
+    ,done:function (res,curr,count) {
+          //this.where={};
+           table_data = res.data;
+       }
+  });
+  //工具栏事件
+  table.on('toolbar(test)', function(obj){
+    var checkStatus = table.checkStatus(obj.config.id);
+    switch(obj.event){
+      case 'getCheckData':
+        var data = checkStatus.data;
+        layer.alert(JSON.stringify(data));
+      break;
+      case 'getCheckLength':
+        var data = checkStatus.data;
+        layer.msg('选中了：'+ data.length + ' 个');
+      break;
+      case 'isAll':
+        layer.msg(checkStatus.isAll ? '全选': '未全选')
+      break;
+      case 'LAYTABLE_TIPS':
+        layer.alert('Table for layui-v'+ layui.v);
+      break;
+      case 'reload':
+        table.reload('test', {
+          page: {curr: 5}
+          //,height: 300
+          //,url: 'x'
+        }, 'data');
+      break;
+    };
+  });
+
+
+  //监听表格行点击
+  table.on('tr', function(obj){
+    console.log(obj)
+  });
+
+  //监听表格复选框选择
+  table.on('checkbox(test)', function(obj){
+    console.log(obj)
+  });
+
+
+  //监听行工具事件
+  table.on('tool(test)', function(obj){
+    var data = obj.data;
+    //console.log(obj)
+     if(obj.event === 'detail'){
+        layer.open({
+            formType: 2,
+            title:'问题详情',
+            area: ['400px','450px'],
+            content: data.detail,
+            edit:false,
+        }, function(value, index){
+        layer.close(index);
+      });
+    }
+  });
+
+  //监听排序
+  table.on('sort(test)', function(obj){
+    console.log(obj.field)
+   table.reload('test', {
+      initSort: obj
+      //,page: {curr: 1} //重新从第一页开始
+      ,where: { //重新请求服务端
+        key: obj.field //排序字段
+        ,order: obj.type //排序方式
+      }
+    });
+  });
+
+  form.render();
+  form.on('submit(Question_Search)', function(data) {
+	var formData = data.field;
+     var  keywords2= formData.keywords;
+       var search_data  = [];
+	console.log(keywords2)
+	if(keywords2 == ''){
+	    layer.msg('请输入关键词哦',function (index) {
+            layer.close(index);
+        })
+    }
+	else{
+	    for(var item in table_data){
+	        if(table_data[item].question.search(keywords2) != -1){
+	            console.log(keywords2)
+	            console.log(table_data[item].question)
+	            search_data.push(table_data[item]);
+            }
+        }
+	    console.log(search_data);
+	     table.render({
+    elem: '#test'
+    ,id:"QuestionReload"
+    ,height: 450
+    //,width: 600
+    ,title: '知乎回答情况表'
+    ,data:search_data
+    ,limit: 30
+    ,toolbar: '#toolbarDemo'
+    ,defaultToolbar: ['filter', 'exports', 'print']
+    ,jump: function(obj){
+      console.log(obj)
+    }
+    ,cols: [[
+      {type: 'checkbox', fixed: 'left',width:50}
+      ,{field:'id', title:'问题ID',align: 'center',width:100, fixed: 'left', unresize: true, sort: true,}
+      ,{field:'question', title:'问题',width:400,templet:'#questionlink'}
+      ,{field:'follower_count', title:'粉丝数',align: 'center',width:115,sort:true,}
+      ,{field:'total_answer',title:'回答数量',align: 'center',width:115,sort:true}
+      ,{field:'date', title:'时间',align: 'center', width:120, sort: true}
+      ,{fixed: 'right', title:'操作',align: 'center', toolbar: '#barDemo'}
+    ]]
+  });
+    }
+
+    return false;
+});
+  form.on('submit(Question_Reset)', function(data) {
+	var formData = data.field;
+     var  keywords2= formData.keywords;
+       var search_data  = [];
+	console.log(keywords2)
+       table.render({
+    elem: '#test'
+    ,id:"QuestionReload"
+    ,height: 450
+    //,width: 600
+    ,title: '知乎回答情况表'
+    ,data:table_data
+    ,limit: 30
+    ,toolbar: '#toolbarDemo'
+    ,defaultToolbar: ['filter', 'exports', 'print']
+    ,jump: function(obj){
+      console.log(obj)
+    }
+    ,cols: [[
+      {type: 'checkbox', fixed: 'left',width:50}
+      ,{field:'id', title:'问题ID',align: 'center',width:100, fixed: 'left', unresize: true, sort: true,}
+      ,{field:'question', title:'问题',align:'center',width:300,templet:'#questionlink'}
+      ,{field:'topic_name',title:'话题',align:'center',width:100}
+      ,{field:'follower_count', title:'粉丝数',align: 'center',width:115,sort:true,}
+      ,{field:'total_answer',title:'回答数量',align: 'center',width:115,sort:true}
+      ,{field:'date', title:'时间',align: 'center', width:120, sort: true}
+      ,{fixed: 'right', title:'操作',align: 'center', toolbar: '#barDemo'}
+    ]]
+  });
+    return false;
+});
+  var $ = layui.jquery, active = {
+    parseTable: function(){
+      table.init('parse-table-demo', {
+        limit: 3
+      });
+    }
+    ,add: function(){
+      table.addRow('test')
+    }
+  };
+  $('i').on('click', function(){
+    var type = $(this).data('type');
+    active[type] ? active[type].call(this) : '';
+  });
+  $('.layui-btn').on('click', function(){
+    var type = $(this).data('type');
+    active[type] ? active[type].call(this) : '';
+  });
+});
+</script>
+</body>
+</html>
